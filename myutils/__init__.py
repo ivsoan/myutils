@@ -10,10 +10,12 @@ from .run_in_processes import *
 from .timeout import *
 from .utils_waring import *
 from .file_process import *
+
 from .plots import *
 
 
 __version__ = '1.0.1'
+
 __all__ = [
     'logging_init',
     'log_execution',
@@ -38,5 +40,7 @@ __all__ = [
     'UtilsWarning',
     'read_txt_to_list',
     'merge_txt_files',
-    'draw_distribution_plot'
+    'draw_distribution_plot',
+    'merge_txt_files'
 ]
+
