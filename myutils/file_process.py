@@ -19,7 +19,7 @@ def read_txt_to_list(file_path: str, logger: logging.Logger = None) -> list:
     with open(file_path, 'r', encoding='utf-8') as f:
         lines = f.readlines()
     log(f"Read {len(lines)} lines from {file_path}.")
-    return [line.strip() for line in lines]
+    return [line.strip() for line in lines if line.strip()]
 
 
 def merge_txt_files(file_path_list: list, save_path: str, name: str, logger: logging.Logger = None) -> None:
@@ -50,7 +50,8 @@ def merge_txt_files(file_path_list: list, save_path: str, name: str, logger: log
     output_file = os.path.join(save_path, f"{name}.txt")
     with open(output_file, 'w', encoding='utf-8') as f:
         for line in line_set:
-            f.write(line + '\n')
+            if line.strip():
+                f.write(line + '\n')
     log(f"Saved merged file to {output_file}.")
 
 
@@ -76,5 +77,6 @@ def get_unique_lines(txt_file_1: str, txt_file_2: str, save_path: str, name: str
     output_file = os.path.join(save_path, f"{name}.txt")
     with open(output_file, 'w', encoding='utf-8') as f:
         for line in unique_lines:
-            f.write(line + '\n')
+            if line.strip():
+                f.write(line + '\n')
     log(f"Saved unique lines to {output_file}.")

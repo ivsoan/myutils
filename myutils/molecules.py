@@ -676,7 +676,8 @@ def save_smiles_list_to_txt(smiles_list: List[str],
 
     with open(output_file, 'w') as f:
         for smiles in smiles_list:
-            f.write(smiles + '\n')
+            if smiles is not None and smiles != '':
+                f.write(smiles + '\n')
 
     log(f"Saved SMILES list to {output_file}, length: {len(smiles_list)}")
 
