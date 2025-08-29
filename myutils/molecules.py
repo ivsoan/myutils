@@ -6,6 +6,7 @@
 """
 import logging
 import os
+import sys
 import warnings
 from typing import List, Union
 
@@ -14,11 +15,15 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem.Draw import MolToFile, MolDrawOptions, rdMolDraw2D
 from rdkit import RDLogger
+from rdkit.Chem import Crippen, Descriptors
+try:
+    from rdkit.Contrib.SA_Score import sascorer
+except ImportError:
+    sys.path.append(os.path.join(os.environ['CONDA_PREFIX'], 'share', 'RDKit', 'Contrib'))
+    from SA_Score import sascorer
 from tqdm import tqdm
 
 RDLogger.DisableLog('rdApp.*')
-
-from .utils_waring import UtilsWarning
 
 
 def _check_smiles(smiles: str, sanitize: bool = True) -> Chem.Mol:
@@ -197,6 +202,7 @@ def generate_gjf_file(smiles: str, save_path: str, name: str, forward_lines: str
     :param logger: the logger to use.
     :return:
     """
+    from .utils_waring import UtilsWarning
     log = logger.info if logger else print
 
     if not os.path.exists(save_path):
@@ -275,6 +281,7 @@ def draw_molecule_to_png(smiles: str, save_path: str, name: str, sanitize: bool 
     :param logger: the logger to use.
     :return:
     """
+    from .utils_waring import UtilsWarning
     log = logger.info if logger else print
     try:
         mol = _check_smiles(smiles, sanitize=sanitize)
@@ -336,6 +343,7 @@ def draw_molecule_to_svg(smiles: str, save_path: str, name: str, sanitize: bool 
     :param logger: the logger to use.
     :return:
     """
+    from .utils_waring import UtilsWarning
     log = logger.info if logger else print
     try:
         mol = _check_smiles(smiles, sanitize=sanitize)
@@ -427,6 +435,7 @@ def draw_molecules_to_pdf(smiles_list: list,
     import io
     import matplotlib.pyplot as plt
     from matplotlib.backends.backend_pdf import PdfPages
+    from .utils_waring import UtilsWarning
     try:
         import cairosvg
     except ImportError:
@@ -555,6 +564,7 @@ def draw_chemical_space_plot(smiles_groups: List[Union[str, List[str]]],
     from .run_in_processes import run_in_processes
     import matplotlib.pyplot as plt
     from sklearn.manifold import TSNE
+    from .utils_waring import UtilsWarning
 
     if isinstance(smiles_groups[0], list):
         if alpha_list:
@@ -661,6 +671,7 @@ def save_smiles_list_to_txt(smiles_list: List[str],
                             sanitize: bool = True,
                             num_processes: int = None,
                             logger: logging.Logger = None):
+    from .utils_waring import UtilsWarning
     if clean_input_smiles_list:
         smiles_list = clean_smiles_list(smiles_list, sanitize=sanitize, num_processes=num_processes, logger=logger, remove_error_results=True)
     else:
@@ -676,7 +687,46 @@ def save_smiles_list_to_txt(smiles_list: List[str],
 
     with open(output_file, 'w') as f:
         for smiles in smiles_list:
-            f.write(smiles + '\n')
+            if smiles is not None and smiles != '':
+                f.write(smiles + '\n')
 
     log(f"Saved SMILES list to {output_file}, length: {len(smiles_list)}")
+
+
+def calculate_molecular_properties(smiles: str, sanitize: bool = True, prop_list: list = None, logger: logging.Logger = None):
+    default_props_list = ['molwt', 'logp', 'hba', 'hbd', 'tpsa', 'sascore']
+    default_props_set = set(default_props_list)
+    if prop_list is None:
+        prop_list = default_props_list
+
+    _prop_set = set(prop_list)
+    if not _prop_set.issubset(default_props_set):
+        raise ValueError(f"Invalid property name, valid property names are: {default_props_list}, but got invalid property: {_prop_set - default_props_set}")
+
+    log = logger.info if logger else print
+
+    mol = _check_smiles(smiles, sanitize=sanitize)
+    res = []
+    for prop in prop_list:
+        if prop == 'molwt':
+            res.append(Descriptors.MolWt(mol))
+        elif prop == 'logp':
+            res.append(Crippen.MolLogP(mol))
+        elif prop == 'hba':
+            res.append(Descriptors.NumHAcceptors(mol))
+        elif prop == 'hbd':
+            res.append(Descriptors.NumHDonors(mol))
+        elif prop == 'tpsa':
+            res.append(Descriptors.TPSA(mol))
+        elif prop =='sascore':
+            res.append(sascorer.calculateScore(mol))
+
+    log(f"Calculated molecular properties for {smiles}")
+    for prop, value in zip(prop_list, res):
+        log(f"{prop}: {value}")
+
+    return res
+
+
+
 

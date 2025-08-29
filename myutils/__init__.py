@@ -14,8 +14,6 @@ from .file_process import *
 from .plots import *
 
 
-__version__ = '1.0.1'
-
 __all__ = [
     'logging_init',
     'log_execution',
@@ -41,6 +39,9 @@ __all__ = [
     'read_txt_to_list',
     'merge_txt_files',
     'draw_distribution_plot',
-    'merge_txt_files'
+    'merge_txt_files',
+    'calculate_molecular_properties',
+    'save_data_to_json_file',
+    'draw_parity_plot'
 ]
 
