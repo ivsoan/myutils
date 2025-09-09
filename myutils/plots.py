@@ -6,7 +6,10 @@
 """
 import logging
 import os
+import warnings
+
 import numpy as np
+import pandas as pd
 
 
 def draw_distribution_plot(data: list | dict,
@@ -112,11 +115,13 @@ def draw_parity_plot(pred: list | np.ndarray,
     from matplotlib import pyplot as plt
     from matplotlib import ticker
     from .file_process import save_data_to_json_file
+    from .utils_waring import UtilsWarning
 
     log = logger.info if logger else print
     assert len(pred) == len(target), f"The length of pred and target should be the same, got {len(pred)}, {len(target)}."
     default_msg_list = ['mae', 'mse', 'rmse', 'r2']
     if msg is None:
+        warnings.warn(UtilsWarning(f"No message is given, use default message: {default_msg_list}"))
         msg = default_msg_list
     else:
         default_msg_set = set(default_msg_list)
@@ -167,7 +172,7 @@ def draw_parity_plot(pred: list | np.ndarray,
     idx = z.argsort()
     targ, pred, z = targ[idx], pred[idx], z[idx]
 
-    fig, ax = plt.subplots(figsize=(8, 7))
+    fig, ax = plt.subplots(figsize=(10, 8))
     scatter_plot = ax.scatter(targ, pred, c=z, s=20, cmap='viridis', zorder=2)
 
     cbar = fig.colorbar(scatter_plot, ax=ax)
@@ -211,3 +216,139 @@ def draw_parity_plot(pred: list | np.ndarray,
     plt.savefig(output_file, dpi=1200)
     plt.close()
     log(f"Save parity plot to {output_file}")
+
+
+def draw_violin_plot(df: pd.DataFrame,
+                     title: str,
+                     save_path: str,
+                     name: str,
+                     figsize: tuple[float, float] = (12, 8),
+                     logger: logging.Logger = None):
+    """
+    draw violin plot
+    :param df: input dataframe, must have exactly two columns for x and y axes
+    :param title: title of plot
+    :param save_path: path to save plot
+    :param name: name of plot
+    :param figsize: size of figure
+    :param logger: logger object to use
+    :return:
+
+    :example:
+    df = pd.DataFrame({
+        'Category': np.repeat(['A', 'B', 'C'], 200),
+        'Value': np.concatenate([
+            np.random.normal(0, 0.5, 200),
+            np.random.normal(0, 1, 200),
+            np.random.normal(0, 1.5, 200)
+        ])
+    })
+    """
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+
+
+    log = logger.info if logger else print
+    if df.shape[1] != 2:
+        raise ValueError(f"Input DataFrame must have exactly two columns for x and y axes, but got {df.shape[1]} columns. Columns: {list(df.columns)}.")
+
+    x_label = df.columns[0]
+    y_label = df.columns[1]
+
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+        log(f"Create directory: {save_path}")
+    output_file = os.path.join(save_path, f"{name}.png")
+    plt.rcParams.update({
+        'font.size': 12,
+        'axes.titlesize': 20,
+        'axes.labelsize': 18,
+        'xtick.labelsize': 10,
+        'ytick.labelsize': 12
+    })
+    plt.figure(figsize=figsize)
+    sns.violinplot(data=df, x=x_label, y=y_label, palette='muted', hue=x_label, legend=False)
+    current_ylim = plt.ylim()
+    max_abs_val = max(abs(current_ylim[0]), abs(current_ylim[1]))
+    plt.ylim((-max_abs_val * 1.05, max_abs_val * 1.05))
+    plt.title(title)
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    plt.tight_layout()
+    plt.savefig(output_file, dpi=1200)
+    plt.close()
+
+    log(f"Save violin plot to {output_file}")
+
+
+def draw_radar_plot(df: pd.DataFrame,
+                     title: str,
+                     save_path: str,
+                     name: str,
+                     figsize: tuple[float, float] = (8, 8),
+                     logger: logging.Logger = None):
+    """
+    draw radar plot
+    :param df: input dataframe
+    :param title: title of the plot
+    :param save_path: save path of the plot
+    :param name: the name of the plot
+    :param figsize: the size of the plot
+    :param logger: the logger to use
+    :return:
+
+    :example:
+    df = pd.DataFrame({
+        'Warrior': [85, 60, 75, 30, 70, 50],
+        'Mage': [40, 70, 45, 95, 85, 65],
+        'Ranger': [55, 90, 60, 65, 80, 75]
+        }, index=['STR', 'AGI', 'CON', 'INT', 'WIS', 'CHA'])
+    """
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+
+
+    log = logger.info if logger else print
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+        log(f"Create directory: {save_path}")
+
+    save_path = os.path.join(save_path, f"{name}.png")
+
+    labels = df.index.tolist()
+    categories = df.columns.tolist()
+    num_vars = len(labels)
+
+    angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
+    angles += angles[:1]
+
+    fig, ax = plt.subplots(figsize=figsize, subplot_kw=dict(polar=True))
+    plt.rcParams.update({
+        'font.size': 12,
+        'axes.titlesize': 20,
+        'axes.labelsize': 18,
+        'xtick.labelsize': 10,
+        'ytick.labelsize': 12
+    })
+
+    colors = plt.cm.get_cmap("tab20c", len(categories))
+    for i, category in enumerate(categories):
+        values = df[category].tolist()
+        values += values[:1]
+
+        # 绘制线条
+        ax.plot(angles, values, color=colors(i), linewidth=2, linestyle='solid', label=category)
+
+    ax.set_yticklabels([])
+    ax.set_xticks(angles[:-1])
+    ax.set_xticklabels(labels, size=14)
+    ax.set_rlabel_position(180)
+    ax.grid(color='grey', linestyle='--', linewidth=0.5)
+    ax.set_ylim(0, 100)
+    plt.title(title, color='black', y=1.1)
+    plt.legend(loc='lower right', bbox_to_anchor=(1.05, -0.05))
+
+    plt.savefig(save_path, dpi=1200)
+    plt.close()
+
+    log(f"Save radar plot to {save_path}")

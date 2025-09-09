@@ -42,6 +42,8 @@ __all__ = [
     'merge_txt_files',
     'calculate_molecular_properties',
     'save_data_to_json_file',
-    'draw_parity_plot'
+    'draw_parity_plot',
+    'draw_violin_plot',
+    'draw_radar_plot'
 ]
 
