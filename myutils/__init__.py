@@ -44,6 +44,7 @@ __all__ = [
     'save_data_to_json_file',
     'draw_parity_plot',
     'draw_violin_plot',
-    'draw_radar_plot'
+    'draw_radar_plot',
+    'draw_line_plot'
 ]
 

@@ -105,4 +105,3 @@ def save_data_to_json_file(data: dict, save_path: str, name: str, logger: loggin
         json.dump(data, f, ensure_ascii=False, indent=4)
 
     log(f"Saved data to {output_file}.")
-    log(f"Saved unique lines to {output_file}.")

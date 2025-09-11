@@ -305,7 +305,6 @@ def draw_radar_plot(df: pd.DataFrame,
         }, index=['STR', 'AGI', 'CON', 'INT', 'WIS', 'CHA'])
     """
     import matplotlib.pyplot as plt
-    import seaborn as sns
 
 
     log = logger.info if logger else print
@@ -336,7 +335,6 @@ def draw_radar_plot(df: pd.DataFrame,
         values = df[category].tolist()
         values += values[:1]
 
-        # 绘制线条
         ax.plot(angles, values, color=colors(i), linewidth=2, linestyle='solid', label=category)
 
     ax.set_yticklabels([])
@@ -352,3 +350,56 @@ def draw_radar_plot(df: pd.DataFrame,
     plt.close()
 
     log(f"Save radar plot to {save_path}")
+
+
+def draw_line_plot(df: pd.DataFrame,
+                   title: str,
+                   save_path: str,
+                   name: str,
+                   y_label: str,
+                   x_label: str,
+                   figsize: tuple[float, float] = (8, 8),
+                   T: bool = False,
+                   y_log_scale: bool = False,
+                   logger: logging.Logger = None):
+    import matplotlib.pyplot as plt
+
+
+    log = logger.info if logger else print
+
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+        log(f"Create directory: {save_path}")
+
+    output_file = os.path.join(save_path, f"{name}.png")
+
+    plt.rcParams.update({
+        'font.size': 12,
+        'axes.titlesize': 20,
+        'axes.labelsize': 18,
+        'xtick.labelsize': 10,
+        'ytick.labelsize': 12
+    })
+
+    if T:
+        df = df.T
+
+    ax = df.plot(
+        kind='line',
+        figsize=figsize,
+        marker='o',
+        linestyle='-',
+        logy=y_log_scale,
+    )
+
+    ax.set_xticks(range(len(df.index)))
+    ax.set_xticklabels(df.index, rotation=0)
+
+    plt.title(title)
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+
+    plt.legend(loc='upper left')
+    plt.savefig(output_file, dpi=1200)
+    plt.close()
+    log(f"Save line plot to {output_file}")
