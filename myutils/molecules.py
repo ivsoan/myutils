@@ -615,7 +615,7 @@ def draw_chemical_space_plot(smiles_groups: List[Union[str, List[str]]],
         res = tsne.fit_transform(fps)
 
         plt.style.use('seaborn-v0_8-whitegrid')
-        fig, ax = plt.subplots(figsize=(12, 10))
+        fig, ax = plt.subplots(figsize=(10, 8))
 
         if isinstance(cmap, str):
             colors = plt.cm.get_cmap(cmap, len(group_names))
