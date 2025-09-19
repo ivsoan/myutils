@@ -535,6 +535,7 @@ def draw_chemical_space_plot(smiles_groups: List[Union[str, List[str]]],
                              random_state: int = 42,
                              num_processes: int = None,
                              alpha_list: list = None,
+                             s_list: list = None,
                              marker_list: list = None,
                              cmap: str | list = None,
                              show_legend: bool = False,
@@ -554,6 +555,7 @@ def draw_chemical_space_plot(smiles_groups: List[Union[str, List[str]]],
     :param random_state: the random state of the TSNE algorithm.
     :param num_processes: the number of processes to use.
     :param alpha_list: a list of alpha values for each group.
+    :param s_list: a list of size values for each group.
     :param marker_list: a list of marker values for each group.
     :param cmap: the color map to use.
     :param show_legend: show the legend on the figure or not.
@@ -565,6 +567,10 @@ def draw_chemical_space_plot(smiles_groups: List[Union[str, List[str]]],
     import matplotlib.pyplot as plt
     from sklearn.manifold import TSNE
     from .utils_waring import UtilsWarning
+    from .plots import _check_plot_config
+
+
+    _check_plot_config()
 
     if isinstance(smiles_groups[0], list):
         if alpha_list:
@@ -627,7 +633,7 @@ def draw_chemical_space_plot(smiles_groups: List[Union[str, List[str]]],
         for i, name in enumerate(group_names):
             indices = np.where(group_labels == i)
             ax.scatter(res[indices, 0], res[indices, 1],
-                       color=colors[i], label=name, alpha=alpha_list[i] if alpha_list else 0.7, s=20, marker=marker_list[i] if marker_list else '.')
+                       color=colors[i], label=name, alpha=alpha_list[i] if alpha_list else 0.7, s=s_list[i] if s_list else 20, marker=marker_list[i] if marker_list else '.')
 
         ax.set_title('Chemical Space Visualization using t-SNE', fontsize=20)
         ax.set_xlabel('t-SNE Dimension 1', fontsize=14)

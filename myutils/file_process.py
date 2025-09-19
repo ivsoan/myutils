@@ -118,3 +118,36 @@ def save_data_to_json_file(data: dict, save_path: str, name: str, logger: loggin
         json.dump(data, f, ensure_ascii=False, indent=4, cls=NumpyEncoder)
 
     log(f"Saved data to {output_file}.")
+
+
+def save_array_to_npy_file(arr: np.ndarray | list,
+                           save_path: str,
+                           name: str,
+                           logger: logging.Logger = None) -> None:
+
+    log = logger.info if logger else print
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+        log(f"Created directory: {save_path}.")
+
+    output_file = os.path.join(save_path, f"{name}.npy")
+
+    np.save(output_file, arr)
+
+    log(f"Saved array to {output_file}.")
+
+
+def load_npy_file(file_path: str,
+                  logger: logging.Logger = None) -> np.ndarray | None:
+    try:
+        return np.load(file_path, allow_pickle=False)
+    except FileNotFoundError:
+        logger.error(f"Error: File not found at {file_path}")
+        return None
+    except ValueError as e:
+        logger.error(
+            f"Error: The file {file_path} may be corrupted or contain objects, which is not allowed. Details: {e}")
+        return None
+    except Exception as e:
+        logger.error(f"An unexpected error occurred while loading {file_path}: {e}")
+        return None

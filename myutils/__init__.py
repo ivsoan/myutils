@@ -45,6 +45,10 @@ __all__ = [
     'draw_parity_plot',
     'draw_violin_plot',
     'draw_radar_plot',
-    'draw_line_plot'
+    'draw_line_plot',
+    'save_array_to_npy_file',
+    'load_npy_file',
+    'draw_multi_kde_plot',
+    'set_plot_config'
 ]
 

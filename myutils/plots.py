@@ -7,9 +7,33 @@
 import logging
 import os
 import warnings
-
 import numpy as np
 import pandas as pd
+import matplotlib
+import matplotlib.pyplot as plt
+import seaborn as sns
+from .utils_waring import UtilsWarning
+
+default_rc_params = matplotlib.rc_params()
+
+
+def set_plot_config(font_size: int = 16,
+                    title_size: int = 24,
+                    label_size: int = 20,
+                    xtick_size: int = 16,
+                    ytick_size: int = 16):
+    plt.rcParams.update({
+        'font.size': font_size,
+        'axes.titlesize': title_size,
+        'axes.labelsize': label_size,
+        'xtick.labelsize': xtick_size,
+        'ytick.labelsize': ytick_size
+    })
+
+
+def _check_plot_config():
+    if default_rc_params == plt.rcParams:
+        warnings.warn(UtilsWarning(f'Use default plot config, or call set_plot_config() to set custom config.'))
 
 
 def draw_distribution_plot(data: list | dict,
@@ -40,22 +64,12 @@ def draw_distribution_plot(data: list | dict,
     :param logger: the logger to use
     :return:
     """
-    import matplotlib.pyplot as plt
-    import seaborn as sns
-
-
     log = logger.info if logger else print
+    _check_plot_config()
     if not os.path.exists(save_path):
         os.makedirs(save_path)
         log(f"Create directory: {save_path}")
     output_file = os.path.join(save_path, f"{name}.png")
-    plt.rcParams.update({
-        'font.size': 12,
-        'axes.titlesize': 20,
-        'axes.labelsize': 18,
-        'xtick.labelsize': 10,
-        'ytick.labelsize': 12
-    })
 
     if isinstance(data, list):
         plt.figure(figsize=(8, 8))
@@ -112,12 +126,12 @@ def draw_parity_plot(pred: list | np.ndarray,
     """
     from sklearn.metrics import mean_absolute_error, r2_score, mean_squared_error
     from scipy.stats import gaussian_kde
-    from matplotlib import pyplot as plt
     from matplotlib import ticker
     from .file_process import save_data_to_json_file
-    from .utils_waring import UtilsWarning
+
 
     log = logger.info if logger else print
+    _check_plot_config()
     assert len(pred) == len(target), f"The length of pred and target should be the same, got {len(pred)}, {len(target)}."
     default_msg_list = ['mae', 'mse', 'rmse', 'r2']
     if msg is None:
@@ -132,14 +146,6 @@ def draw_parity_plot(pred: list | np.ndarray,
         os.makedirs(save_path)
         log(f"Create directory: {save_path}")
     output_file = os.path.join(save_path, f"{name}.png")
-
-    plt.rcParams.update({
-        'font.size': 12,
-        'axes.titlesize': 20,
-        'axes.labelsize': 18,
-        'xtick.labelsize': 10,
-        'ytick.labelsize': 12
-    })
 
     _pred, _targ = [], []
     for p, t in zip(pred, target):
@@ -223,6 +229,7 @@ def draw_violin_plot(df: pd.DataFrame,
                      save_path: str,
                      name: str,
                      figsize: tuple[float, float] = (12, 8),
+                     asymmetrical_y: bool = False,
                      logger: logging.Logger = None):
     """
     draw violin plot
@@ -231,6 +238,7 @@ def draw_violin_plot(df: pd.DataFrame,
     :param save_path: path to save plot
     :param name: name of plot
     :param figsize: size of figure
+    :param asymmetrical_y: whether to set y axis as asymmetrical or not.
     :param logger: logger object to use
     :return:
 
@@ -244,11 +252,8 @@ def draw_violin_plot(df: pd.DataFrame,
         ])
     })
     """
-    import matplotlib.pyplot as plt
-    import seaborn as sns
-
-
     log = logger.info if logger else print
+    _check_plot_config()
     if df.shape[1] != 2:
         raise ValueError(f"Input DataFrame must have exactly two columns for x and y axes, but got {df.shape[1]} columns. Columns: {list(df.columns)}.")
 
@@ -259,18 +264,12 @@ def draw_violin_plot(df: pd.DataFrame,
         os.makedirs(save_path)
         log(f"Create directory: {save_path}")
     output_file = os.path.join(save_path, f"{name}.png")
-    plt.rcParams.update({
-        'font.size': 12,
-        'axes.titlesize': 20,
-        'axes.labelsize': 18,
-        'xtick.labelsize': 10,
-        'ytick.labelsize': 12
-    })
     plt.figure(figsize=figsize)
     sns.violinplot(data=df, x=x_label, y=y_label, palette='muted', hue=x_label, legend=False)
-    current_ylim = plt.ylim()
-    max_abs_val = max(abs(current_ylim[0]), abs(current_ylim[1]))
-    plt.ylim((-max_abs_val * 1.05, max_abs_val * 1.05))
+    if asymmetrical_y:
+        current_ylim = plt.ylim()
+        max_abs_val = max(abs(current_ylim[0]), abs(current_ylim[1]))
+        plt.ylim((-max_abs_val * 1.05, max_abs_val * 1.05))
     plt.title(title)
     plt.xlabel(x_label)
     plt.ylabel(y_label)
@@ -304,10 +303,8 @@ def draw_radar_plot(df: pd.DataFrame,
         'Ranger': [55, 90, 60, 65, 80, 75]
         }, index=['STR', 'AGI', 'CON', 'INT', 'WIS', 'CHA'])
     """
-    import matplotlib.pyplot as plt
-
-
     log = logger.info if logger else print
+    _check_plot_config()
     if not os.path.exists(save_path):
         os.makedirs(save_path)
         log(f"Create directory: {save_path}")
@@ -322,13 +319,6 @@ def draw_radar_plot(df: pd.DataFrame,
     angles += angles[:1]
 
     fig, ax = plt.subplots(figsize=figsize, subplot_kw=dict(polar=True))
-    plt.rcParams.update({
-        'font.size': 12,
-        'axes.titlesize': 20,
-        'axes.labelsize': 18,
-        'xtick.labelsize': 10,
-        'ytick.labelsize': 12
-    })
 
     colors = plt.cm.get_cmap("tab20c", len(categories))
     for i, category in enumerate(categories):
@@ -362,24 +352,14 @@ def draw_line_plot(df: pd.DataFrame,
                    T: bool = False,
                    y_log_scale: bool = False,
                    logger: logging.Logger = None):
-    import matplotlib.pyplot as plt
-
-
     log = logger.info if logger else print
+    _check_plot_config()
 
     if not os.path.exists(save_path):
         os.makedirs(save_path)
         log(f"Create directory: {save_path}")
 
     output_file = os.path.join(save_path, f"{name}.png")
-
-    plt.rcParams.update({
-        'font.size': 12,
-        'axes.titlesize': 20,
-        'axes.labelsize': 18,
-        'xtick.labelsize': 10,
-        'ytick.labelsize': 12
-    })
 
     if T:
         df = df.T
@@ -403,3 +383,102 @@ def draw_line_plot(df: pd.DataFrame,
     plt.savefig(output_file, dpi=1200)
     plt.close()
     log(f"Save line plot to {output_file}")
+
+
+def draw_multi_kde_plot(data: dict[str, list],
+                        title: str,
+                        save_path: str,
+                        name: str,
+                        x_label: str,
+                        legend_title: str,
+                        show_legend: bool = True,
+                        figsize: tuple[float, float] = (8, 8),
+                        cmap: str | list = None,
+                        label_peaks: bool = False,
+                        logger: logging.Logger = None) -> None:
+    from scipy.stats import gaussian_kde
+    from matplotlib.patches import Patch
+
+
+    log = logger.info if logger else print
+    _check_plot_config()
+
+    if cmap is None:
+        cmap = 'tab10'
+        warnings.warn(UtilsWarning(f"No cmap is given, use default cmap: {cmap}"))
+
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+        log(f"Create directory: {save_path}")
+
+    output_file = os.path.join(save_path, f"{name}.png")
+
+    plt.figure(figsize=figsize)
+    ax = plt.gca()
+
+    valid_data_values = [v for v in data.values() if v and len(v) > 1 and np.var(v) > 0]
+
+    all_values = np.concatenate(valid_data_values)
+    global_min, global_max = all_values.min(), all_values.max()
+
+    # 2. 增加边界余量 (padding)，让曲线有空间回到0
+    range_width = global_max - global_min
+    padding = range_width * 0.15  # 增加15%的余量
+    plot_min = global_min - padding
+    plot_max = global_max + padding
+
+    # 3. 生成一个统一的、更宽的X坐标轴用于绘图
+    global_x_coords = np.linspace(plot_min, plot_max, 500)
+
+    if isinstance(cmap, str):
+        colors = plt.cm.get_cmap(cmap, len(data.keys()))
+        indices = np.linspace(0, 1, len(data.keys()))
+        colors = [colors(i) for i in indices]
+    else:
+        colors = cmap
+        if len(colors) != len(data.keys()):
+            raise ValueError(f"The length of colors should be the same as the number of data, but got {len(colors)} and {len(data.keys())}.")
+
+    legend_handles = []
+
+    for i, (label, values) in enumerate(data.items()):
+        if not values or len(values) < 2 or np.var(values) == 0:
+            warnings.warn(f"Skipping '{label}' because its data is empty, has too few points, or has zero variance.")
+            continue
+
+        try:
+            kde = gaussian_kde(values)
+            # y_coords = kde(global_x_coords)
+            x_coords = np.linspace(min(values) * 1.2, max(values), 500)
+            y_coords = kde(x_coords)
+        except np.linalg.LinAlgError:
+            warnings.warn(f"Skipping '{label}' because KDE calculation failed (likely due to singular matrix).")
+            continue
+
+        ax.plot(x_coords, y_coords, color=colors[i], linewidth=1.5)
+        ax.fill_between(x_coords, y_coords, color=colors[i], alpha=0.5)
+
+        legend_handles.append(Patch(facecolor=colors[i], alpha=0.6, label=label))
+
+        if label_peaks:
+            peak_index = np.argmax(y_coords)
+            peak_x = x_coords[peak_index]
+            peak_y = y_coords[peak_index]
+
+            ax.text(
+                peak_x, peak_y + 0.02, label,
+                ha='center', fontsize=14, fontweight='bold'
+            )
+
+    ax.set_xlabel(x_label)
+    ax.set_ylabel("Probability Density")
+    ax.set_title(title, pad=20)
+    if show_legend:
+        ax.legend(handles=legend_handles, title=legend_title, loc='upper right')
+
+    ax.set_ylim(-0.1, 10)
+    plt.tight_layout()
+
+    plt.savefig(output_file, dpi=1200)
+    plt.close()
+    log(f"Save multi-KDE plot to {output_file}")
