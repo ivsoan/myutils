@@ -60,14 +60,15 @@ def default_log_file_name():
     script_name = os.path.splitext(script_name_with_ext)[0]
     now = datetime.datetime.now()
     formatted_time = now.strftime("%Y%m%d_%H%M%S")
-    log_file = f'./logs/{script_name}_{formatted_time}.log'
+    log_file = f'{script_name}_{formatted_time}.log'
     return log_file
 
 
-def logging_init(log_file: str = None, console_level=logging.DEBUG, file_level=logging.DEBUG, send_to_console=True, name=None):
+def logging_init(log_path: str = None, log_file_name: str = None, console_level=logging.DEBUG, file_level=logging.DEBUG, send_to_console=True, name=None):
     """
     Initialize the logging system.
-    :param log_file: the path of the log file (default is None, which means a default log file name will be generated)
+    :param log_path: the path of the log file
+    :param log_file_name: the name of the log file (default is generated based on the script name and the current time)
     :param console_level: the logging level in the console to use
     :param file_level: the logging level in the file to use
     :param send_to_console: if True, log messages will be sent to the console as well as to the file
@@ -77,30 +78,26 @@ def logging_init(log_file: str = None, console_level=logging.DEBUG, file_level=l
     if name is None:
         name = os.path.basename(inspect.stack()[1].filename)
 
-    if not isinstance(log_file, str) or log_file is None:
-        log_file = default_log_file_name()
+    log_path = log_path if log_path is not None else './logs'
 
-    if not log_file.endswith('.log'):
-        log_file += '.log'
+    if not os.path.exists(log_path):
+        os.makedirs(log_path)
+        warnings.warn(UtilsWarning(f'Create logs directory at {log_path}.'))
 
-    using_log_file = log_file
+    if log_file_name:
+        if not log_file_name.endswith('.log'):
+            log_file_name += '.log'
+    else:
+        log_file_name = default_log_file_name()
 
-    if not os.path.exists(os.path.dirname(log_file)):
-        os.makedirs(os.path.dirname(log_file), exist_ok=True)
-        using_log_file = log_file
-        warnings.warn(UtilsWarning(f'logging_init: Path {os.path.dirname(log_file)} does not exist! Creating log file {using_log_file}.'))
+    log_file = os.path.join(log_path, log_file_name)
 
-    if os.path.exists(log_file):
-        using_log_file = default_log_file_name()
-        warnings.warn(UtilsWarning(
-            f'logging_init: File {log_file} already exists! Using {using_log_file} instead.'))
-
-    print(f'logging_init: Logging to file {using_log_file}.')
+    print(f'logging_init: Logging to file {log_file}.')
 
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
 
-    file_handler = logging.FileHandler(using_log_file, encoding='utf-8')
+    file_handler = logging.FileHandler(log_file, encoding='utf-8')
     file_handler.setLevel(file_level)
 
     if send_to_console:

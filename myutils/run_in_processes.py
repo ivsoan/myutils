@@ -8,8 +8,10 @@ import logging
 import multiprocessing
 import os
 import traceback
+import warnings
 from functools import wraps, partial
 from typing import Optional, Callable, Any
+from .utils_waring import UtilsWarning
 
 
 def _safe_worker(func: Callable, task_item: Any) -> tuple:
@@ -32,6 +34,8 @@ def run_in_processes(num_processes: Optional[int] = None, remove_error_results: 
         step2: decorate function with this decorator, if the func has a _worker version, use it instead. e.g. parallel_normalize_smiles = parallel_decorator(normalize_smiles)
         step3: call the decorated function with the tasks iterable as the first argument and any other arguments as needed. e.g. results = parallel_normalize_smiles(smiles_list, sanitize=True)
     """
+    if num_processes is None and os.cpu_count() > 48:
+        warnings.warn(UtilsWarning(f"If you are running on a server, make sure to set the `num_processes` argument to a lower value to avoid overloading the server."))
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):

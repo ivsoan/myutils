@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="90ce1ea5-3fe5-4f25-b945-d2ad02d4ffff" name="更改" comment="">
+      <change beforePath="$PROJECT_DIR$/logger.py" beforeDir="false" afterPath="$PROJECT_DIR$/logger.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots.py" beforeDir="false" afterPath="$PROJECT_DIR$/plots.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/run_in_processes.py" beforeDir="false" afterPath="$PROJECT_DIR$/run_in_processes.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../setup.py" beforeDir="false" afterPath="$PROJECT_DIR$/../setup.py" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 4
+}</component>
+  <component name="ProjectId" id="32iyW4w3WDvY0wCDoS1dKGXIYj7" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  }
+}</component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-js-predefined-1d06a55b98c1-74d2a5396914-JavaScript-PY-241.14494.241" />
+        <option value="bundled-python-sdk-0509580d9d50-28c9f5db9ffe-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-241.14494.241" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="应用程序级" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="默认任务">
+      <changelist id="90ce1ea5-3fe5-4f25-b945-d2ad02d4ffff" name="更改" comment="" />
+      <created>1757917715715</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1757917715715</updated>
+      <workItem from="1757917717125" duration="427000" />
+      <workItem from="1757918829895" duration="109000" />
+      <workItem from="1757920702375" duration="672000" />
+      <workItem from="1757921578215" duration="21000" />
+      <workItem from="1757921617344" duration="40000" />
+      <workItem from="1757990208237" duration="118000" />
+      <workItem from="1757990400125" duration="6000" />
+      <workItem from="1758013987593" duration="1141000" />
+      <workItem from="1758018347098" duration="98000" />
+      <workItem from="1758018490786" duration="12000" />
+      <workItem from="1758018638566" duration="47000" />
+      <workItem from="1758018763211" duration="61000" />
+      <workItem from="1758018856480" duration="17000" />
+      <workItem from="1758019016426" duration="94000" />
+      <workItem from="1758019141584" duration="14000" />
+      <workItem from="1758019183706" duration="7000" />
+      <workItem from="1758019208581" duration="15000" />
+      <workItem from="1758249388835" duration="4000" />
+      <workItem from="1758251299149" duration="335000" />
+      <workItem from="1758252130609" duration="206000" />
+      <workItem from="1758870513924" duration="151000" />
+      <workItem from="1758870863599" duration="295000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>

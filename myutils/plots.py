@@ -164,7 +164,7 @@ def draw_parity_plot(pred: list | np.ndarray,
 
     result_dict = {'mae': mae, 'mse': mse, 'rmse': rmse, 'r2': r2}
     if save_result:
-        save_data_to_json_file(result_dict, save_path, 'result')
+        save_data_to_json_file(result_dict, save_path, name)
 
     lim_min = min(np.min(pred), np.min(targ))
     lim_max = max(np.max(pred), np.max(targ))
