@@ -49,6 +49,7 @@ __all__ = [
     'save_array_to_npy_file',
     'load_npy_file',
     'draw_multi_kde_plot',
-    'set_plot_config'
+    'set_plot_config',
+    'load_json_file'
 ]
 

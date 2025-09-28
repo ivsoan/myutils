@@ -139,15 +139,33 @@ def save_array_to_npy_file(arr: np.ndarray | list,
 
 def load_npy_file(file_path: str,
                   logger: logging.Logger = None) -> np.ndarray | None:
+    log_error = logger.error if logger else print
     try:
         return np.load(file_path, allow_pickle=False)
     except FileNotFoundError:
-        logger.error(f"Error: File not found at {file_path}")
+        log_error(f"Error: File not found at {file_path}")
         return None
     except ValueError as e:
-        logger.error(
+        log_error(
             f"Error: The file {file_path} may be corrupted or contain objects, which is not allowed. Details: {e}")
         return None
     except Exception as e:
-        logger.error(f"An unexpected error occurred while loading {file_path}: {e}")
+        log_error(f"An unexpected error occurred while loading {file_path}: {e}")
+        return None
+
+def load_json_file(file_path: str,
+                   logger: logging.Logger = None) -> dict | None:
+    log_error = logger.error if logger else print
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        log_error(f"Error: File not found at {file_path}")
+        return None
+    except ValueError as e:
+        log_error(
+            f"Error: The file {file_path} may be corrupted or contain objects, which is not allowed. Details: {e}")
+        return None
+    except Exception as e:
+        log_error(f"An unexpected error occurred while loading {file_path}: {e}")
         return None

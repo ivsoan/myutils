@@ -10,6 +10,10 @@ Follow these steps to install the library:
     ```bash
     git clone https://github.com/ivsoan/myutils.git
     ```
+    or 
+    ```bash
+    git clone git@github.com:ivsoan/myutils.git
+    ```
 
 2.  Navigate into the project directory:
     ```bash
