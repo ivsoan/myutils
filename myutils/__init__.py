@@ -50,6 +50,7 @@ __all__ = [
     'load_npy_file',
     'draw_multi_kde_plot',
     'set_plot_config',
-    'load_json_file'
+    'load_json_file',
+    'save_list_to_txt_file'
 ]
 

@@ -47,6 +47,7 @@ def draw_distribution_plot(data: list | dict,
                       rotate_45: bool = False,
                       x_log_scale: bool = False,
                       y_log_scale: bool = False,
+                      figsize: tuple[float, float] = (8, 8),
                       logger: logging.Logger = None):
     """
     Draw distribution plot using seaborn.
@@ -61,6 +62,7 @@ def draw_distribution_plot(data: list | dict,
     :param rotate_45: rotate 45 degrees for x labels or not
     :param x_log_scale: set x axis to log scale or not
     :param y_log_scale: set y axis to log scale or not
+    :param figsize: the size of the figure
     :param logger: the logger to use
     :return:
     """
@@ -72,7 +74,7 @@ def draw_distribution_plot(data: list | dict,
     output_file = os.path.join(save_path, f"{name}.png")
 
     if isinstance(data, list):
-        plt.figure(figsize=(8, 8))
+        plt.figure(figsize=figsize)
         sns.histplot(data, bins=bins, kde=True, color=color, edgecolor='black')
         plt.title(title)
         plt.xlabel(xlabel)
@@ -87,7 +89,7 @@ def draw_distribution_plot(data: list | dict,
         log(f"Save distribution plot to {output_file}")
 
     elif isinstance(data, dict):
-        plt.figure(figsize=(8, 8))
+        plt.figure(figsize=figsize)
         sns.barplot(x=list(data.keys()), y=list(data.values()), color=color, edgecolor='black')
         plt.title(title)
         plt.xlabel(xlabel)
@@ -427,7 +429,6 @@ def draw_multi_kde_plot(data: dict[str, list],
     plot_min = global_min - padding
     plot_max = global_max + padding
 
-    # 3. 生成一个统一的、更宽的X坐标轴用于绘图
     global_x_coords = np.linspace(plot_min, plot_max, 500)
 
     if isinstance(cmap, str):
@@ -467,7 +468,7 @@ def draw_multi_kde_plot(data: dict[str, list],
 
             ax.text(
                 peak_x, peak_y + 0.02, label,
-                ha='center', fontsize=14, fontweight='bold'
+                ha='center', fontweight='bold'
             )
 
     ax.set_xlabel(x_label)
@@ -476,7 +477,6 @@ def draw_multi_kde_plot(data: dict[str, list],
     if show_legend:
         ax.legend(handles=legend_handles, title=legend_title, loc='upper right')
 
-    ax.set_ylim(-0.1, 10)
     plt.tight_layout()
 
     plt.savefig(output_file, dpi=1200)

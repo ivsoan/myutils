@@ -635,11 +635,11 @@ def draw_chemical_space_plot(smiles_groups: List[Union[str, List[str]]],
             ax.scatter(res[indices, 0], res[indices, 1],
                        color=colors[i], label=name, alpha=alpha_list[i] if alpha_list else 0.7, s=s_list[i] if s_list else 20, marker=marker_list[i] if marker_list else '.')
 
-        ax.set_title('Chemical Space Visualization using t-SNE', fontsize=20)
-        ax.set_xlabel('t-SNE Dimension 1', fontsize=14)
-        ax.set_ylabel('t-SNE Dimension 2', fontsize=14)
+        ax.set_title('Chemical Space Visualization using t-SNE')
+        ax.set_xlabel('t-SNE Dimension 1')
+        ax.set_ylabel('t-SNE Dimension 2')
         if show_legend:
-            ax.legend(fontsize=12, markerscale=1.5)
+            ax.legend(markerscale=1.5)
         ax.grid(False)
 
         plt.savefig(output_file, dpi=1200, bbox_inches='tight')
@@ -659,11 +659,11 @@ def draw_chemical_space_plot(smiles_groups: List[Union[str, List[str]]],
 
         ax.scatter(res[:, 0], res[:, 1], color='#007ACC', alpha=0.7, s=50)
 
-        ax.set_title('Chemical Space Visualization using t-SNE', fontsize=20)
-        ax.set_xlabel('t-SNE Dimension 1', fontsize=14)
-        ax.set_ylabel('t-SNE Dimension 2', fontsize=14)
+        ax.set_title('Chemical Space Visualization using t-SNE')
+        ax.set_xlabel('t-SNE Dimension 1')
+        ax.set_ylabel('t-SNE Dimension 2')
         if show_legend:
-            ax.legend(fontsize=12, markerscale=1.5)
+            ax.legend(markerscale=1.5)
         ax.grid(False)
 
         plt.savefig(output_file, dpi=1200, bbox_inches='tight')

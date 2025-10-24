@@ -169,3 +169,20 @@ def load_json_file(file_path: str,
     except Exception as e:
         log_error(f"An unexpected error occurred while loading {file_path}: {e}")
         return None
+
+def save_list_to_txt_file(lst: list,
+                          save_path: str,
+                          name: str,
+                          logger: logging.Logger = None) -> None:
+    log = logger.info if logger else print
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+        log(f"Created directory: {save_path}.")
+
+    output_file = os.path.join(save_path, f"{name}.txt")
+
+    with open(output_file, 'w', encoding='utf-8') as f:
+        for line in lst:
+            f.write(line + '\n')
+
+    log(f"Saved list to {output_file}, length: {len(lst)}.")
