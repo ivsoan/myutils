@@ -7,6 +7,9 @@
 import logging
 import os.path
 import json
+import pickle
+from typing import Any
+
 import numpy as np
 
 
@@ -186,3 +189,34 @@ def save_list_to_txt_file(lst: list,
             f.write(line + '\n')
 
     log(f"Saved list to {output_file}, length: {len(lst)}.")
+
+
+def save_data_to_pkl_file(data: Any, save_path: str, name: str, logger: logging.Logger = None) -> None:
+    log = logger.info if logger else print
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+        log(f"Created directory: {save_path}.")
+
+    output_file = os.path.join(save_path, f"{name}.pkl")
+
+    with open(output_file, 'wb') as f:
+        pickle.dump(data, f)
+
+    log(f"Saved data to {output_file}.")
+
+
+def load_pkl_file(file_path: str, logger: logging.Logger = None) -> Any:
+    log = logger.error if logger else print
+    try:
+        with open(file_path, 'rb') as f:
+            return pickle.load(f)
+    except FileNotFoundError:
+        log(f"Error: File not found at {file_path}")
+        return None
+    except ValueError as e:
+        log(
+            f"Error: The file {file_path} may be corrupted or contain objects, which is not allowed. Details: {e}")
+        return None
+    except Exception as e:
+        log(f"An unexpected error occurred while loading {file_path}: {e}")
+        return None

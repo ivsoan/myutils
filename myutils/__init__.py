@@ -10,7 +10,7 @@ from .run_in_processes import *
 from .timeout import *
 from .utils_waring import *
 from .file_process import *
-
+from .util import *
 from .plots import *
 
 
@@ -51,6 +51,9 @@ __all__ = [
     'draw_multi_kde_plot',
     'set_plot_config',
     'load_json_file',
-    'save_list_to_txt_file'
+    'save_list_to_txt_file',
+    'save_data_to_pkl_file',
+    'load_pkl_file',
+    'get_datetime_str',
 ]
 

@@ -537,9 +537,11 @@ def draw_chemical_space_plot(smiles_groups: List[Union[str, List[str]]],
                              alpha_list: list = None,
                              s_list: list = None,
                              marker_list: list = None,
-                             cmap: str | list = None,
+                             cmap: str | list = 'tab20',
                              show_legend: bool = False,
                              clean_input_smiles_groups: bool = False,
+                             res_pkl_path: str = None,
+                             save_res: bool = True,
                              logger: logging.Logger = None):
     """
     Draw a chemical space plot using t-SNE.
@@ -560,6 +562,8 @@ def draw_chemical_space_plot(smiles_groups: List[Union[str, List[str]]],
     :param cmap: the color map to use.
     :param show_legend: show the legend on the figure or not.
     :param clean_input_smiles_groups: clean the smiles groups before drawing the plot or not.
+    :param res_pkl_path: the path to save the results as a pickle file.
+    :param save_res: save the results or not.
     :param logger: the logger to use.
     :return:
     """
@@ -568,9 +572,28 @@ def draw_chemical_space_plot(smiles_groups: List[Union[str, List[str]]],
     from sklearn.manifold import TSNE
     from .utils_waring import UtilsWarning
     from .plots import _check_plot_config
+    from .util import get_datetime_str
+    from .file_process import load_pkl_file, save_data_to_pkl_file
 
 
     _check_plot_config()
+    log = logger.info if logger else print
+
+    if res_pkl_path:
+        res = load_pkl_file(res_pkl_path, logger=logger)
+        save_res = False
+        if res is not None:
+            log(f"Successfully loaded results from {res_pkl_path}, skip saving results.")
+        else:
+            raise ValueError(f"Failed to load results from {res_pkl_path}, please check the file path.")
+    else:
+        res = None
+
+    if save_res:
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
+            log(f"Created directory {save_path}")
+
 
     if isinstance(smiles_groups[0], list):
         if alpha_list:
@@ -587,13 +610,12 @@ def draw_chemical_space_plot(smiles_groups: List[Union[str, List[str]]],
             group_names = [f"Group {i + 1}" for i in range(len(smiles_groups))]
 
     else:
-        warnings.warn(UtilsWarning("Only one group of SMILES is provided, no need to visualize chemical space."))
+        warnings.warn(UtilsWarning("Only one group of SMILES is provided."))
         if clean_input_smiles_groups is True:
             smiles_groups = clean_smiles_list(smiles_groups, sanitize=sanitize, num_processes=num_processes, logger=logger)
         else:
             warnings.warn(UtilsWarning("Make sure the input SMILES are all valid SMILES strings, or set `clean_input_smiles_groups` to True."))
 
-    log = logger.info if logger else print
 
     if not os.path.exists(save_path):
         os.makedirs(save_path)
@@ -612,13 +634,20 @@ def draw_chemical_space_plot(smiles_groups: List[Union[str, List[str]]],
 
         group_labels = np.array(group_labels)
 
-        parallel_decorator = run_in_processes(num_processes=num_processes)
-        fp_calculator = parallel_decorator(calculate_fingerprint)
+        if res is not None:
+            assert len(res) == len(smiles_list), f"The length of res should be the same as the number of smiles, got {len(res)} and {len(smiles_list)}, please check the input res_pkl_path."
 
-        fps = fp_calculator(smiles_list, fp_type=fp_type, radius=radius, nbits=nbits, sanitize=sanitize)
+        if res is None:
+            parallel_decorator = run_in_processes(num_processes=num_processes)
+            fp_calculator = parallel_decorator(calculate_fingerprint)
 
-        fps = np.array(fps)
-        res = tsne.fit_transform(fps)
+            fps = fp_calculator(smiles_list, fp_type=fp_type, radius=radius, nbits=nbits, sanitize=sanitize)
+
+            fps = np.array(fps)
+            res = tsne.fit_transform(fps)
+
+            if save_res:
+                save_data_to_pkl_file(res, save_path, f"{name}_tsne_res_{get_datetime_str()}", logger=logger)
 
         plt.style.use('seaborn-v0_8-whitegrid')
         fig, ax = plt.subplots(figsize=(10, 8))
@@ -646,13 +675,18 @@ def draw_chemical_space_plot(smiles_groups: List[Union[str, List[str]]],
         log(f"Saved image to {output_file}")
 
     else:
-        parallel_decorator = run_in_processes(num_processes=num_processes)
-        fp_calculator = parallel_decorator(calculate_fingerprint)
+        if res is not None:
+            assert len(res) == len(smiles_groups), f'The length of res should be the same as the number of smiles, got {len(res)} and {len(smiles_groups)}, please check the input res_pkl_path.'
+        else:
+            parallel_decorator = run_in_processes(num_processes=num_processes)
+            fp_calculator = parallel_decorator(calculate_fingerprint)
 
-        fps = fp_calculator(smiles_groups, fp_type=fp_type, radius=radius, nbits=nbits, sanitize=sanitize)
+            fps = fp_calculator(smiles_groups, fp_type=fp_type, radius=radius, nbits=nbits, sanitize=sanitize)
 
-        fps = np.array(fps)
-        res = tsne.fit_transform(fps)
+            fps = np.array(fps)
+            res = tsne.fit_transform(fps)
+            if save_res:
+                save_data_to_pkl_file(res, save_path, f"{name}_tsne_res_{get_datetime_str()}", logger=logger)
 
         plt.style.use('seaborn-v0_8-whitegrid')
         fig, ax = plt.subplots(figsize=(12, 10))
