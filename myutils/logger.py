@@ -12,6 +12,7 @@ import functools
 import inspect
 import warnings
 from .utils_waring import UtilsWarning
+from .util import get_datetime_str
 
 
 def log_execution(level=logging.INFO, message="Calling function {func_name} with args: {args} kwargs: {kwargs}"):
@@ -85,6 +86,7 @@ def logging_init(log_path: str = None, log_file_name: str = None, console_level=
         warnings.warn(UtilsWarning(f'Create logs directory at {log_path}.'))
 
     if log_file_name:
+        log_file_name += get_datetime_str()
         if not log_file_name.endswith('.log'):
             log_file_name += '.log'
     else:
