@@ -12,6 +12,7 @@ from .utils_waring import *
 from .file_process import *
 from .util import *
 from .plots import *
+from .model import *
 
 
 __all__ = [
@@ -55,5 +56,6 @@ __all__ = [
     'save_data_to_pkl_file',
     'load_pkl_file',
     'get_datetime_str',
+    'FeedForwardNeuralNetwork'
 ]
 

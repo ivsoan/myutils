@@ -8,6 +8,7 @@ import logging
 import os
 import sys
 import warnings
+from collections import Counter, OrderedDict
 from typing import List, Union
 
 import numpy as np
@@ -22,6 +23,8 @@ except ImportError:
     sys.path.append(os.path.join(os.environ['CONDA_PREFIX'], 'share', 'RDKit', 'Contrib'))
     from SA_Score import sascorer
 from tqdm import tqdm
+from .file_process import *
+from .plots import *
 
 RDLogger.DisableLog('rdApp.*')
 
@@ -768,5 +771,183 @@ def calculate_molecular_properties(smiles: str, sanitize: bool = True, prop_list
     return res
 
 
+class GroupCounter:
+    def __init__(self, smiles, scaffold_smiles=None):
+        self.smiles = smiles
+        self.scaffold_smiles = scaffold_smiles
+        self.scaffold_atom_indices = set()
+        try:
+            self.mol = _check_smiles(smiles, sanitize=True)
+        except Exception as e:
+            raise ValueError(f"Error processing SMILES string '{smiles}': {e}")
 
+        if scaffold_smiles is not None:
+            try:
+                self.scaffold_mol = _check_smiles(scaffold_smiles, sanitize=True)
+                match_indices_tuple = self.mol.GetSubstructMatches(self.scaffold_mol)
+                if match_indices_tuple:
+                    for item in match_indices_tuple:
+                        self.scaffold_atom_indices.update(item)
+            except Exception as e:
+                raise ValueError(f"Error processing scaffold SMILES string '{scaffold_smiles}': {e}")
+        else:
+            raise ValueError("Scaffold SMILES string is required for group counting.")
+
+        if not self.mol.HasSubstructMatch(self.scaffold_mol):
+            raise ValueError(
+                f"Molecular SMILES {self.smiles} does not contain scaffold {self.scaffold_smiles}.")
+
+
+        self.FUNCTIONAL_GROUPS_PRIORITIZED = OrderedDict([
+            ('Carboxylic Acid Group', '[CX3](=O)[OX2H1]'),  # Matches C, =O, OH from -COOH
+            ('Acid Anhydride Core', '[CX3](=O)[OX2][CX3](=O)'),  # Matches C(=O)OC(=O) core
+            ('Ester Linkage Core', '[CX3](=O)[OX2;!H1]'),  # Matches C, =O, -O- from ester
+            ('Amide Core', '[CX3](=O)[N]'),  # Matches C, =O, N from amide (general N)
+            ('Lactone Core', '[C&R](=O)[O&X2&R;!H1;!$(O[C&X3]=O)]'),
+            ('Lactam Core', '[C&R](=O)[N&R]'),  # Lactam C=O-N in a ring
+            ('Aldehyde Group', '[CH1X3]=O'),  # Matches C, H, =O from -CHO (CH1X3 ensures it's a terminal formyl C)
+            ('Ketone Carbonyl', '[#6][C;X3;!$(C(=O)[O,N]);!$([CH1X3]=O)](=O)[#6]'),
+
+            ('Indole Ring', 'c1ccc2c(c1)[nH]cc2'),
+            ('Quinoline Ring', 'c1ccc2c(c1)cccn2'),
+            ('Phenyl Ring', 'c1ccccc1'),
+            ('Pyridine Ring', 'n1ccccc1'),
+            ('Pyrrole Ring', 'n1cccc1'),
+            ('Furan Ring', 'o1cccc1'),
+            ('Thiophene Ring', 's1cccc1'),
+            ('Imidazole Ring', 'n1cncc1'),  # Common SMARTS
+            ('Pyrazole Ring', 'n1nccc1'),  # Common SMARTS
+            ('Pyrimidine Ring', 'n1cnccc1'),  # Common SMARTS for pyrimidine
+            ('Triazoles Ring', 'c1nnnc1'),
+
+            # ('Phenolic Hydroxyl', '[c]-[OH1]'),  # Matches C-O-H on an aromatic carbon
+            # ('Alcoholic Hydroxyl', '[C;!$(C=O);!a]-[OH1]'),  # Matches C-O-H on a non-carbonyl, non-aromatic carbon
+            ('Enol Hydroxyl', '[C!a]=[C!a]-[OH1]'),  # Matches C=C-O-H
+            # ('Ether Linkage', '[#6][OD2][#6]'),  # Matches C-O-C (general)
+            ('Epoxide', '[O;X2;r3]1[C;X4;r3][C;X4;r3]1'),
+            ('Nitro Group', '[N+](=O)[O-]'),
+            ('Nitrile Group', 'C#N'),  # C attached to CN
+
+            # ('Primary Amine', '[NH2;X3;!$(NC=O)]'),  # NH2 (3 connections), not part of amide
+            # ('Secondary Amine', '[NH1;X3;!$(NC=O)]([#6])[#6]'),  # NH (3 connections), not part of amide
+            # ('Tertiary Amine', '[NH0;X3;!$(NC=O)]([#6])([#6])[#6]'),  # N (3 connections), not part of amide
+            ('Thiol Group', '[#6][SH1]'),  # -SH attached to a carbon
+            ('Sulfide Linkage', '[#6][SD2][#6]'),  # C-S-C
+
+            ('Trifluoromethyl', 'C(F)(F)F'),
+            ('Trichloromethyl', 'C(Cl)(Cl)Cl'),
+            ('Halogen (F)', '[F]'),
+            ('Halogen (Cl)', '[Cl]'),
+            ('Halogen (Br)', '[Br]'),
+            ('Halogen (I)', '[I]'),
+            ('Alkene (C=C)', '[C]=[C]'),
+            ('Alkyne (C#C)', '[CX2]#[CX2]'),
+            ('Nitrogen (N)', '[N]'),
+            ('Oxygen (OH)', '[OH]'),
+            ('Ether (O)', '[O]'),
+            ('Methyl (CH3)', '[CH3]'),
+            ('Methyl (CH2)', '[CH2]'),
+            ('Methyl (CH)', '[CH]'),
+        ])
+
+    def count_functional_groups(self):
+        counts = Counter()
+        assigned_core_atoms = set()
+
+        for group_name, smarts_pattern_str in self.FUNCTIONAL_GROUPS_PRIORITIZED.items():
+            if not smarts_pattern_str:
+                raise ValueError(f"SMARTS pattern for group '{group_name}' is empty.")
+            pattern = Chem.MolFromSmarts(smarts_pattern_str)
+            if pattern is None:
+                raise ValueError(f"SMARTS pattern for group '{group_name}' is invalid.")
+
+            matches = self.mol.GetSubstructMatches(pattern, useChirality=True, useQueryQueryMatches=True)
+
+            for match_atoms_tuple in matches:
+                current_match_atoms = set(match_atoms_tuple)
+
+                if self.scaffold_atom_indices and current_match_atoms.issubset(self.scaffold_atom_indices):
+                    continue
+
+                is_blocked_by_prior_assignment = False
+                for atom_idx in current_match_atoms:
+                    if atom_idx in assigned_core_atoms:
+                        is_blocked_by_prior_assignment = True
+                        break
+
+                if not is_blocked_by_prior_assignment:
+                    counts[group_name] += 1
+                    assigned_core_atoms.update(current_match_atoms)
+
+        identified_specific_aromatic_ring_atom_sets = []
+        for group_name, smarts_pattern_str in self.FUNCTIONAL_GROUPS_PRIORITIZED.items():
+            if "Ring" in group_name and counts.get(group_name, 0) > 0:
+
+                pattern = Chem.MolFromSmarts(smarts_pattern_str)
+                if pattern:
+                    matches = self.mol.GetSubstructMatches(pattern)
+                    for match_atoms_tuple in matches:
+                        identified_specific_aromatic_ring_atom_sets.append(set(match_atoms_tuple))
+
+        unassigned_aromatic_sssr_rings_count = 0
+        if hasattr(Chem, 'GetSymmSSSR'):
+            for sssr_ring_atom_indices_tuple in Chem.GetSymmSSSR(self.mol):
+                sssr_ring_atoms = set(sssr_ring_atom_indices_tuple)
+                if not sssr_ring_atoms:
+                    continue
+                if self.scaffold_atom_indices and sssr_ring_atoms.issubset(self.scaffold_atom_indices):
+                    continue
+
+                is_valid_aromatic_sssr_ring = True
+                try:
+                    for atom_idx in sssr_ring_atoms:
+                        atom = self.mol.GetAtomWithIdx(atom_idx)
+                        if not atom.GetIsAromatic():
+                            is_valid_aromatic_sssr_ring = False
+                            break
+                except RuntimeError:
+                    is_valid_aromatic_sssr_ring = False
+
+                if is_valid_aromatic_sssr_ring:
+                    is_covered_by_specific_smarts = False
+                    for specific_ring_set in identified_specific_aromatic_ring_atom_sets:
+                        if sssr_ring_atoms == specific_ring_set:
+                            is_covered_by_specific_smarts = True
+                            break
+                    if not is_covered_by_specific_smarts:
+                        unassigned_aromatic_sssr_rings_count += 1
+
+        if unassigned_aromatic_sssr_rings_count > 0:
+            counts['Other Aromatic Rings (SSSR based, not specifically named)'] = unassigned_aromatic_sssr_rings_count
+
+        return counts
+
+
+def group_count(input, scaffold=None, save_path='./group_count/', name='group_count', save_fig=False, logger: logging.Logger = None):
+    log = logger.info if logger else print
+    if isinstance(input, str):
+        cnt = GroupCounter(input, scaffold).count_functional_groups()
+    elif isinstance(input, list):
+        cnt = Counter()
+        errors = []
+        for smi in input:
+            try:
+                cnt.update(GroupCounter(smi, scaffold).count_functional_groups())
+            except:
+                errors.append(smi)
+
+        log(f'error smiles: {errors}')
+        log(f'number of error smiles: {len(errors)}')
+
+    else:
+        raise ValueError(f'Input must be a SMILES string or a list of SMILES strings, but got {type(input)}.')
+
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+
+    cnt_dict = dict(cnt)
+    save_data_to_json_file(cnt_dict, save_path, name, logger=logger)
+
+    if save_fig:
+        draw_distribution_plot(cnt_dict, save_path, name, xlabel='Group', ylabel='Count', figsize=(10, 8), logger=logger, title='Group Count Distribution')
 
