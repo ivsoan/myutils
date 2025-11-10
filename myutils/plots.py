@@ -10,6 +10,7 @@ import warnings
 import numpy as np
 import pandas as pd
 import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 from .utils_waring import UtilsWarning
@@ -135,6 +136,10 @@ def draw_parity_plot(pred: list | np.ndarray,
     log = logger.info if logger else print
     _check_plot_config()
     assert len(pred) == len(target), f"The length of pred and target should be the same, got {len(pred)}, {len(target)}."
+
+    if len(pred) > 200000:
+        warnings.warn(UtilsWarning(f"The length of data is {len(pred)}, which is too large for drawing parity plot. It may take a long time to calculate KDE."))
+
     default_msg_list = ['mae', 'mse', 'rmse', 'r2']
     if msg is None:
         warnings.warn(UtilsWarning(f"No message is given, use default message: {default_msg_list}"))
@@ -175,8 +180,10 @@ def draw_parity_plot(pred: list | np.ndarray,
     lim_max += margin
     axis_limit = [lim_min, lim_max]
 
+    log('Start calculating KDE.')
     xy = np.vstack([targ, pred])
     z = gaussian_kde(xy)(xy)
+    log('Finish KDE.')
     idx = z.argsort()
     targ, pred, z = targ[idx], pred[idx], z[idx]
 

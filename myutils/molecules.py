@@ -17,6 +17,8 @@ from rdkit.Chem import AllChem
 from rdkit.Chem.Draw import MolToFile, MolDrawOptions, rdMolDraw2D
 from rdkit import RDLogger
 from rdkit.Chem import Crippen, Descriptors
+from rdkit.Geometry import Point2D
+
 try:
     from rdkit.Contrib.SA_Score import sascorer
 except ImportError:
@@ -272,19 +274,19 @@ def calculate_fingerprint(smiles: str, fp_type: str = 'ecfp', radius: int = 2, n
     return np.array(fp)
 
 
-def draw_molecule_to_png(smiles: str, save_path: str, name: str, sanitize: bool = True, show_atom_numbers: bool = False, size: (int, int) = (400, 400), logger: logging.Logger = None) -> None:
+def draw_molecule_to_png(smiles: str, save_path: str, name: str, msg: str = None, sanitize: bool = True, show_atom_numbers: bool = False, size: (int, int) = (400, 400), logger: logging.Logger = None) -> None:
     """
     Draw a molecule to a PNG file.
     :param smiles: the input SMILES string.
     :param save_path: the path to save the PNG file.
     :param name: the name of the PNG file.
+    :param msg: the message to be drawn at the bottom of the image.
     :param sanitize: sanitize the input SMILES string or not.
     :param show_atom_numbers: show the atom numbers or not.
     :param size: the size of the molecule.
     :param logger: the logger to use.
     :return:
     """
-    from .utils_waring import UtilsWarning
     log = logger.info if logger else print
     try:
         mol = _check_smiles(smiles, sanitize=sanitize)
@@ -297,20 +299,25 @@ def draw_molecule_to_png(smiles: str, save_path: str, name: str, sanitize: bool 
         warnings.warn(UtilsWarning(f"Could not generate 2D coordinates for SMILES: {smiles}, use unoptimized coordinates."))
 
     if not os.path.exists(save_path):
-        os.makedirs(save_path)
+        os.makedirs(save_path, exist_ok=True)
         log(f"Created directory {save_path}")
 
     png_file = os.path.join(save_path, f"{name}.png")
 
-    drawing_options = MolDrawOptions()
+    drawer = rdMolDraw2D.MolDraw2DCairo(size[0], size[1])
+    options = drawer.drawOptions()
+
     if show_atom_numbers:
-        drawing_options.addAtomIndices = True
+        options.addAtomIndices = True
+
+    options.legendColour = (0, 0, 0)
+    drawer.DrawMolecule(mol, legend=str(msg) or "")
+
+    drawer.FinishDrawing()
 
     try:
-        MolToFile(mol,
-                  png_file,
-                  size=size,
-                  options=drawing_options)
+        with open(png_file, 'wb') as f:
+            f.write(drawer.GetDrawingText())
         log(f"Saved png file to {png_file}")
     except Exception as e:
         log(f"Could not save png file to {png_file}, {e}")
@@ -736,7 +743,7 @@ def save_smiles_list_to_txt(smiles_list: List[str],
     log(f"Saved SMILES list to {output_file}, length: {len(smiles_list)}")
 
 
-def calculate_molecular_properties(smiles: str, sanitize: bool = True, prop_list: list = None, logger: logging.Logger = None):
+def calculate_molecular_properties(smiles: str, sanitize: bool = True, prop_list: list = None, logger: logging.Logger = None, quiet: bool = False):
     default_props_list = ['molwt', 'logp', 'hba', 'hbd', 'tpsa', 'sascore']
     default_props_set = set(default_props_list)
     if prop_list is None:
@@ -764,9 +771,10 @@ def calculate_molecular_properties(smiles: str, sanitize: bool = True, prop_list
         elif prop =='sascore':
             res.append(sascorer.calculateScore(mol))
 
-    log(f"Calculated molecular properties for {smiles}")
-    for prop, value in zip(prop_list, res):
-        log(f"{prop}: {value}")
+    if not quiet:
+        log(f"Calculated molecular properties for {smiles}")
+        for prop, value in zip(prop_list, res):
+            log(f"{prop}: {value}")
 
     return res
 

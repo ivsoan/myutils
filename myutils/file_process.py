@@ -41,7 +41,7 @@ def read_txt_to_list(file_path: str, logger: logging.Logger = None) -> list:
     return [line.strip() for line in lines if line.strip()]
 
 
-def merge_txt_files(file_path_list: list, save_path: str, name: str, logger: logging.Logger = None) -> None:
+def merge_txt_files(file_path_list: list, save_path: str, name: str, logger: logging.Logger = None) -> str:
     """
     Merge txt files to one file.
     :param file_path_list: txt file paths to be merged
@@ -73,8 +73,10 @@ def merge_txt_files(file_path_list: list, save_path: str, name: str, logger: log
                 f.write(line + '\n')
     log(f"Saved merged file to {output_file}.")
 
+    return output_file
 
-def get_unique_lines(txt_file_1: str, txt_file_2: str, save_path: str, name: str, logger: logging.Logger = None) -> None:
+
+def get_unique_lines(txt_file_1: str, txt_file_2: str, save_path: str, name: str, logger: logging.Logger = None) -> str:
     """
     Get lines in txt file 1 but not in txt file 2.
     :param txt_file_1: path to txt file 1
@@ -100,8 +102,10 @@ def get_unique_lines(txt_file_1: str, txt_file_2: str, save_path: str, name: str
                 f.write(line + '\n')
     log(f"Saved unique lines to {output_file}.")
 
+    return output_file
 
-def save_data_to_json_file(data: dict, save_path: str, name: str, logger: logging.Logger = None) -> None:
+
+def save_data_to_json_file(data: dict, save_path: str, name: str, logger: logging.Logger = None) -> str:
     """
     Save data to json file.
     :param data: a dict of data to be saved
@@ -122,11 +126,13 @@ def save_data_to_json_file(data: dict, save_path: str, name: str, logger: loggin
 
     log(f"Saved data to {output_file}.")
 
+    return output_file
+
 
 def save_array_to_npy_file(arr: np.ndarray | list,
                            save_path: str,
                            name: str,
-                           logger: logging.Logger = None) -> None:
+                           logger: logging.Logger = None) -> str:
 
     log = logger.info if logger else print
     if not os.path.exists(save_path):
@@ -138,6 +144,8 @@ def save_array_to_npy_file(arr: np.ndarray | list,
     np.save(output_file, arr)
 
     log(f"Saved array to {output_file}.")
+
+    return output_file
 
 
 def load_npy_file(file_path: str,
@@ -176,7 +184,7 @@ def load_json_file(file_path: str,
 def save_list_to_txt_file(lst: list,
                           save_path: str,
                           name: str,
-                          logger: logging.Logger = None) -> None:
+                          logger: logging.Logger = None) -> str:
     log = logger.info if logger else print
     if not os.path.exists(save_path):
         os.makedirs(save_path)
@@ -190,8 +198,10 @@ def save_list_to_txt_file(lst: list,
 
     log(f"Saved list to {output_file}, length: {len(lst)}.")
 
+    return output_file
 
-def save_data_to_pkl_file(data: Any, save_path: str, name: str, logger: logging.Logger = None) -> None:
+
+def save_data_to_pkl_file(data: Any, save_path: str, name: str, logger: logging.Logger = None) -> str:
     log = logger.info if logger else print
     if not os.path.exists(save_path):
         os.makedirs(save_path)
@@ -203,6 +213,8 @@ def save_data_to_pkl_file(data: Any, save_path: str, name: str, logger: logging.
         pickle.dump(data, f)
 
     log(f"Saved data to {output_file}.")
+
+    return output_file
 
 
 def load_pkl_file(file_path: str, logger: logging.Logger = None) -> Any:
