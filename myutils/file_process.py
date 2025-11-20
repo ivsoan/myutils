@@ -11,6 +11,7 @@ import pickle
 from typing import Any
 
 import numpy as np
+import torch
 
 
 class NumpyEncoder(json.JSONEncoder):
@@ -231,4 +232,67 @@ def load_pkl_file(file_path: str, logger: logging.Logger = None) -> Any:
         return None
     except Exception as e:
         log(f"An unexpected error occurred while loading {file_path}: {e}")
+        return None
+
+
+def save_dict_to_npz_file(data: dict, save_path: str, name: str, logger: logging.Logger = None) -> str:
+    log = logger.info if logger else print
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+        log(f"Created directory: {save_path}.")
+
+    output_file = os.path.join(save_path, f"{name}.npz")
+
+    np.savez_compressed(output_file, **data)
+
+    log(f"Saved data to {output_file}.")
+
+    return output_file
+
+
+def load_npz_file(file_path: str, logger: logging.Logger = None) -> dict | None:
+    log_error = logger.error if logger else print
+    try:
+        with np.load(file_path, allow_pickle=True) as data:
+            return {key: data[key] for key in data.files}
+    except FileNotFoundError:
+        log_error(f"Error: File not found at {file_path}")
+        return None
+    except ValueError as e:
+        log_error(
+            f"Error: The file {file_path} may be corrupted or contain objects, which is not allowed. Details: {e}")
+        return None
+    except Exception as e:
+        log_error(f"An unexpected error occurred while loading {file_path}: {e}")
+        return None
+
+
+def save_pt_file(item: Any, save_path: str, name: str, logger: logging.Logger = None) -> str:
+    log = logger.info if logger else print
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+        log(f"Created directory: {save_path}.")
+
+    output_file = os.path.join(save_path, f"{name}.pt")
+
+    torch.save(item, output_file)
+
+    log(f"Saved data to {output_file}.")
+
+    return output_file
+
+
+def load_pt_file(file_path: str, device: str = 'cpu', logger: logging.Logger = None) -> Any:
+    log_error = logger.error if logger else print
+    try:
+        return torch.load(file_path, map_location=torch.device(device), weights_only=False)
+    except FileNotFoundError:
+        log_error(f"Error: File not found at {file_path}")
+        return None
+    except ValueError as e:
+        log_error(
+            f"Error: The file {file_path} may be corrupted or contain objects, which is not allowed. Details: {e}")
+        return None
+    except Exception as e:
+        log_error(f"An unexpected error occurred while loading {file_path}: {e}")
         return None

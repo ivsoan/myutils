@@ -8,10 +8,9 @@ from setuptools import setup, find_packages
 
 setup(
     name='myutils',
-    version='1.0.14',
+    version='1.0.15',
     packages=find_packages(),
     author='Chen Junpeng',
     author_email='cjp_2002@163.com',
     url='https://github.com/ivsoan/myutils/',
-    requires=['rdkit', 'pickle', 'numpy', 'matplotlib', 'seaborn', 'tqdm', 'torch']
 )
