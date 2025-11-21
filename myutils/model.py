@@ -212,9 +212,6 @@ class MyTrainer:
         self.scheduler_kwargs = scheduler_kwargs if scheduler_kwargs else {}
         self.loss_fn_name = loss_fn
         self.scheduler_name = scheduler
-        self.optimizer = self.get_optimizer(optimizer, **self.optimizer_kwargs)
-        self.scheduler = self.get_scheduler(scheduler, **self.scheduler_kwargs)
-        self.loss_fn = self.get_loss_fn()
         self.train_dataset = train_dataset
         self.val_dataset = val_dataset
         self.test_dataset = test_dataset if test_dataset is not None else None
@@ -225,6 +222,9 @@ class MyTrainer:
         self.val_loader = DataLoader(dataset=self.val_dataset, batch_size=self.batch_size)
         self.test_loader = DataLoader(dataset=self.test_dataset, batch_size=self.batch_size) if test_dataset is not None else None
         self.early_stop = EarlyStop(early_stop_patience, early_stop_delta)
+        self.optimizer = self.get_optimizer(optimizer, **self.optimizer_kwargs)
+        self.scheduler = self.get_scheduler(scheduler, **self.scheduler_kwargs)
+        self.loss_fn = self.get_loss_fn()
         if not os.path.exists(save_path):
             os.makedirs(save_path)
         self.save_path = save_path
