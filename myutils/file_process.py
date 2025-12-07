@@ -11,7 +11,6 @@ import pickle
 from typing import Any
 
 import numpy as np
-import torch
 
 
 class NumpyEncoder(json.JSONEncoder):
@@ -195,7 +194,10 @@ def save_list_to_txt_file(lst: list,
 
     with open(output_file, 'w', encoding='utf-8') as f:
         for line in lst:
-            f.write(line + '\n')
+            if line is None:
+                f.write('None' + '\n')
+            else:
+                f.write(line + '\n')
 
     log(f"Saved list to {output_file}, length: {len(lst)}.")
 
@@ -266,33 +268,3 @@ def load_npz_file(file_path: str, logger: logging.Logger = None) -> dict | None:
         log_error(f"An unexpected error occurred while loading {file_path}: {e}")
         return None
 
-
-def save_pt_file(item: Any, save_path: str, name: str, logger: logging.Logger = None) -> str:
-    log = logger.info if logger else print
-    if not os.path.exists(save_path):
-        os.makedirs(save_path)
-        log(f"Created directory: {save_path}.")
-
-    output_file = os.path.join(save_path, f"{name}.pt")
-
-    torch.save(item, output_file)
-
-    log(f"Saved data to {output_file}.")
-
-    return output_file
-
-
-def load_pt_file(file_path: str, device: str = 'cpu', logger: logging.Logger = None) -> Any:
-    log_error = logger.error if logger else print
-    try:
-        return torch.load(file_path, map_location=torch.device(device), weights_only=False)
-    except FileNotFoundError:
-        log_error(f"Error: File not found at {file_path}")
-        return None
-    except ValueError as e:
-        log_error(
-            f"Error: The file {file_path} may be corrupted or contain objects, which is not allowed. Details: {e}")
-        return None
-    except Exception as e:
-        log_error(f"An unexpected error occurred while loading {file_path}: {e}")
-        return None
