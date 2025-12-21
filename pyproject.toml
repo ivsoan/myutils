@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "myutils"
+version = "1.1.1"
+description = "My custom utility package"
+authors = [
+  { name="Chen Junpeng", email="cjp_2002@163.com" },
+]
+urls = { "Repository" = "https://github.com/ivsoan/myutils/" }
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]

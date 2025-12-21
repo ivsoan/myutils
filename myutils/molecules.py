@@ -10,7 +10,7 @@ import sys
 import warnings
 from collections import Counter, OrderedDict
 from typing import List, Union
-
+import gc
 import numpy as np
 from rdkit import Chem
 from rdkit.Chem import AllChem
@@ -486,7 +486,7 @@ def draw_molecules_to_pdf(smiles_list: list,
         img_extent = (0.1, 0.9, 0.4, 1.0)  # (left, right, bottom, top)
 
         try:
-            png_bytes = cairosvg.svg2png(bytestring=svg_text.encode('utf-8'))
+            png_bytes = cairosvg.svg2png(bytestring=svg_text.encode('utf-8'), scale=4)
             img = plt.imread(io.BytesIO(png_bytes), format='png')
             ax.imshow(img, extent=img_extent, aspect='equal')
         except Exception as e:
@@ -528,7 +528,7 @@ def draw_molecules_to_pdf(smiles_list: list,
                 else:
                     axes_flat[i].axis('off')
 
-            pdf.savefig(fig, dpi=300)
+            pdf.savefig(fig, dpi=1200)
             plt.close(fig)
     log(f"Saved pdf file to {pdf_path}")
 
@@ -537,11 +537,14 @@ def draw_chemical_space_plot(smiles_groups: List[Union[str, List[str]]],
                              save_path: str,
                              name: str,
                              group_names: list = None,
+                             method: str = 'umap',
+                             cuml: bool = True,
                              fp_type: str = 'ecfp',
                              radius: int = 2,
                              nbits: int = 2048,
                              sanitize: bool = True,
                              perplexity: int = 30,
+                             n_neighbors: int = 100,
                              random_state: int = 42,
                              num_processes: int = None,
                              alpha_list: list = None,
@@ -555,6 +558,9 @@ def draw_chemical_space_plot(smiles_groups: List[Union[str, List[str]]],
                              logger: logging.Logger = None):
     """
     Draw a chemical space plot using t-SNE.
+    :param n_neighbors: param for t-sne method in cuml
+    :param cuml: use cuml or not
+    :param method: umap or tsne
     :param smiles_groups: groups of smiles strings, each group is a list of smiles strings.
     :param save_path: the path to save the figure.
     :param name: the name of the figure.
@@ -626,14 +632,31 @@ def draw_chemical_space_plot(smiles_groups: List[Union[str, List[str]]],
         else:
             warnings.warn(UtilsWarning("Make sure the input SMILES are all valid SMILES strings, or set `clean_input_smiles_groups` to True."))
 
-
-    if not os.path.exists(save_path):
-        os.makedirs(save_path)
-        log(f"Created directory {save_path}")
-
     output_file = os.path.join(save_path, f"{name}.png")
 
-    tsne = TSNE(n_components=2, random_state=random_state, perplexity=perplexity)
+    if cuml:
+        try:
+            import cuml.manifold as c
+        except ImportError:
+            warnings.warn(UtilsWarning('cuml is not installed. Please install it using `pip install cuml-cu12 --extra-index-url=https://pypi.nvidia.com`.'))
+            c = None
+            cuml = False
+
+    if cuml and method == 'tsne':
+        func = c.TSNE(n_components=2, random_state=random_state, perplexity=perplexity, n_neighbors=n_neighbors)
+    elif cuml and method == 'umap':
+        func = c.UMAP(n_components=2, random_state=random_state, n_neighbors=perplexity, min_dist=0.3, metric='cosine')
+    elif method == 'umap':
+        try:
+            import umap
+        except ImportError:
+            warnings.warn(UtilsWarning('umap is not installed. Please install it using `pip install umap-learn`. Using t-sne algorithm.'))
+            method = 'tsne'
+        func = umap.UMAP(n_components=2, random_state=random_state, n_neighbors=perplexity, min_dist=0.3, metric='cosine')
+    elif method == 'tsne':
+        func = TSNE(n_components=2, random_state=random_state, perplexity=perplexity)
+    else:
+        raise ValueError(f"Unsupported method: {method}, please choose among ['tsne', 'umap']")
 
     if isinstance(smiles_groups[0], list):
         group_labels, smiles_list, fps = [], [], []
@@ -654,7 +677,10 @@ def draw_chemical_space_plot(smiles_groups: List[Union[str, List[str]]],
             fps = fp_calculator(smiles_list, fp_type=fp_type, radius=radius, nbits=nbits, sanitize=sanitize)
 
             fps = np.array(fps)
-            res = tsne.fit_transform(fps)
+            res = func.fit_transform(fps)
+
+            del func
+            gc.collect()
 
             if save_res:
                 save_data_to_pkl_file(res, save_path, f"{name}_tsne_res_{get_datetime_str()}", logger=logger)
@@ -674,9 +700,10 @@ def draw_chemical_space_plot(smiles_groups: List[Union[str, List[str]]],
             ax.scatter(res[indices, 0], res[indices, 1],
                        color=colors[i], label=name, alpha=alpha_list[i] if alpha_list else 0.7, s=s_list[i] if s_list else 20, marker=marker_list[i] if marker_list else '.')
 
-        ax.set_title('Chemical Space Visualization using t-SNE')
-        ax.set_xlabel('t-SNE Dimension 1')
-        ax.set_ylabel('t-SNE Dimension 2')
+        method_str = 't-SNE' if method == 'tsne' else 'UMAP'
+        ax.set_title(f'Chemical Space Visualization using {method_str}')
+        ax.set_xlabel(f'{method_str} Dimension 1')
+        ax.set_ylabel(f'{method_str} Dimension 2')
         if show_legend:
             ax.legend(markerscale=1.5)
         ax.grid(False)
@@ -694,7 +721,11 @@ def draw_chemical_space_plot(smiles_groups: List[Union[str, List[str]]],
             fps = fp_calculator(smiles_groups, fp_type=fp_type, radius=radius, nbits=nbits, sanitize=sanitize)
 
             fps = np.array(fps)
-            res = tsne.fit_transform(fps)
+            res = func.fit_transform(fps)
+
+            del func
+            gc.collect()
+
             if save_res:
                 save_data_to_pkl_file(res, save_path, f"{name}_tsne_res_{get_datetime_str()}", logger=logger)
 
@@ -703,9 +734,10 @@ def draw_chemical_space_plot(smiles_groups: List[Union[str, List[str]]],
 
         ax.scatter(res[:, 0], res[:, 1], color='#007ACC', alpha=0.7, s=50)
 
-        ax.set_title('Chemical Space Visualization using t-SNE')
-        ax.set_xlabel('t-SNE Dimension 1')
-        ax.set_ylabel('t-SNE Dimension 2')
+        method_str = 't-SNE' if method == 'tsne' else 'UMAP'
+        ax.set_title(f'Chemical Space Visualization using {method_str}')
+        ax.set_xlabel(f'{method_str} Dimension 1')
+        ax.set_ylabel(f'{method_str} Dimension 2')
         if show_legend:
             ax.legend(markerscale=1.5)
         ax.grid(False)
