@@ -19,8 +19,8 @@ _import_structure = {
                   'draw_molecule_to_png_worker', 'draw_molecule_to_svg', 'draw_molecule_to_svg_worker', 'draw_molecules_to_pdf',
                   'draw_chemical_space_plot', 'save_smiles_list_to_txt', 'calculate_molecular_properties', 'GroupCounter', 'group_count'],
     'plots': ['set_plot_config', 'draw_distribution_plot', 'draw_parity_plot', 'draw_violin_plot', 'draw_radar_plot', 'draw_line_plot', 'draw_multi_kde_plot'],
-    'run_in_processes': ['run_in_processes'],
-    'timeout': ['timeout'],
+    'processes': ['run_in_processes'],
+    'time_out': ['timeout'],
     'util': ['get_datetime_str'],
 }
 

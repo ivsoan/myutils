@@ -18,11 +18,11 @@ from .utils_waring import UtilsWarning
 default_rc_params = matplotlib.rc_params()
 
 
-def set_plot_config(font_size: int = 16,
-                    title_size: int = 24,
-                    label_size: int = 20,
-                    xtick_size: int = 16,
-                    ytick_size: int = 16):
+def set_plot_config(font_size: int = 20,
+                    title_size: int = 28,
+                    label_size: int = 24,
+                    xtick_size: int = 20,
+                    ytick_size: int = 20):
     plt.rcParams.update({
         'font.size': font_size,
         'axes.titlesize': title_size,
@@ -107,6 +107,32 @@ def draw_distribution_plot(data: list | dict,
         log(f"Save distribution plot to {output_file}")
 
 
+def kde_torch(xy, batch_size=2048, device='cuda'):
+    import torch
+    device = torch.device(device)
+    data = torch.from_numpy(xy).float().to(device)
+    d, n = data.shape
+
+    cov = torch.cov(data)
+    scott_factor = n ** (-1.0 / (d + 4))
+    inv_cov = torch.linalg.inv(cov)
+    L = torch.linalg.cholesky(inv_cov)
+    data_whitened = torch.mm(data.T, L) / scott_factor
+    det_cov = torch.linalg.det(cov)
+    const = 1.0 / (n * (scott_factor ** d) * torch.sqrt(det_cov) * (2 * torch.pi) ** (d / 2))
+
+    density = torch.zeros(n, device=device)
+
+    for i in range(0, n, batch_size):
+        batch_end = min(i + batch_size, n)
+        batch_data = data_whitened[i:batch_end]
+        sq_dists = torch.cdist(batch_data, data_whitened, p=2) ** 2
+        weights = torch.exp(-0.5 * sq_dists)
+        density[i:batch_end] = weights.sum(dim=1)
+
+    return (density * const).cpu().numpy()
+
+
 def draw_parity_plot(pred: list | np.ndarray,
                      target: list | np.ndarray,
                      save_path: str,
@@ -114,9 +140,23 @@ def draw_parity_plot(pred: list | np.ndarray,
                      title: str,
                      save_result: bool = False,
                      msg: list = None,
+                     jitter: float = 0.0,
+                     cmap: str = 'viridis',
+                     use_gpu: bool = True,
+                     device: str = 'cuda',
+                     batch_size: int = 2048,
                      logger: logging.Logger = None):
     """
     Draw parity plot for comparing predicted values and target values.
+    Hardware Benchmarks (Based on Intel Core i7-13700 & NVIDIA GeForce RTX 4060):
+        - Data Size Threshold (20,000):
+          For N < 20,000, the CPU (i7-13700) is faster because the PCIe data transfer overhead
+          outweighs the GPU calculation speed.
+          For N > 20,000, the GPU (RTX 4060) shows significant speedup due to massive parallelism.
+        - Batch Size (2048):
+          Empirically determined as the optimal balance between memory usage and CUDA core occupancy
+          for the RTX 4060.
+
     :param pred: the predicted values
     :param target: the target values
     :param save_path: the path to save the figure
@@ -124,6 +164,11 @@ def draw_parity_plot(pred: list | np.ndarray,
     :param title: the title of the plot
     :param save_result: save the result or not
     :param msg: the message to display, chosen from ['mae', 'mse', 'rmse', 'r2']
+    :param jitter: the amount of jitter
+    :param cmap: the color map
+    :param use_gpu: use gpu or not
+    :param device: the device
+    :param batch_size: the batch size
     :param logger: the logger to use
     :return:
     """
@@ -137,8 +182,10 @@ def draw_parity_plot(pred: list | np.ndarray,
     _check_plot_config()
     assert len(pred) == len(target), f"The length of pred and target should be the same, got {len(pred)}, {len(target)}."
 
-    if len(pred) > 200000:
-        warnings.warn(UtilsWarning(f"The length of data is {len(pred)}, which is too large for drawing parity plot. It may take a long time to calculate KDE."))
+    if len(pred) > 20000 and use_gpu == False:
+        warnings.warn(UtilsWarning(f"The length of data is {len(pred)}, which is too large for drawing parity plot. It may take a long time to calculate KDE. Set `use_gpu=True` to draw faster."))
+    if len(pred) < 20000 and use_gpu == True:
+        warnings.warn(UtilsWarning(f"Data size is too small, using cpu may be faster."))
 
     default_msg_list = ['mae', 'mse', 'rmse', 'r2']
     if msg is None:
@@ -173,22 +220,41 @@ def draw_parity_plot(pred: list | np.ndarray,
     if save_result:
         save_data_to_json_file(result_dict, save_path, name)
 
-    lim_min = min(np.min(pred), np.min(targ))
-    lim_max = max(np.max(pred), np.max(targ))
+    plot_targ = targ.copy().astype(float)
+    plot_pred = pred.copy().astype(float)
+
+    if jitter > 0:
+        rng = np.random.RandomState(42)
+        noise_scale = jitter * 0.5
+
+        plot_targ += rng.normal(loc=0, scale=noise_scale, size=plot_targ.shape)
+        plot_pred += rng.normal(loc=0, scale=noise_scale, size=plot_pred.shape)
+        log(f"Applied Gaussian jitter (scale={noise_scale}) for visualization.")
+
+    lim_min = min(np.min(plot_pred), np.min(plot_targ))
+    lim_max = max(np.max(plot_pred), np.max(plot_targ))
     margin = (lim_max - lim_min) * 0.1
     lim_min -= margin
     lim_max += margin
     axis_limit = [lim_min, lim_max]
 
     log('Start calculating KDE.')
-    xy = np.vstack([targ, pred])
-    z = gaussian_kde(xy)(xy)
+    xy = np.vstack([plot_targ, plot_pred])
+    if use_gpu:
+        try:
+            z = kde_torch(xy, batch_size=batch_size, device=device)
+        except ImportError as e:
+            log(f"KDE could not be imported: {e}")
+            log(f"Using scipy instead")
+            z = gaussian_kde(xy)(xy)
+    else:
+        z = gaussian_kde(xy)(xy)
     log('Finish KDE.')
     idx = z.argsort()
-    targ, pred, z = targ[idx], pred[idx], z[idx]
+    plot_targ, plot_pred, z = plot_targ[idx], plot_pred[idx], z[idx]
 
     fig, ax = plt.subplots(figsize=(10, 8))
-    scatter_plot = ax.scatter(targ, pred, c=z, s=20, cmap='viridis', zorder=2)
+    scatter_plot = ax.scatter(plot_targ, plot_pred, c=z, s=20, cmap=cmap, zorder=2)
 
     cbar = fig.colorbar(scatter_plot, ax=ax)
     cbar.set_label('Data Point Density')

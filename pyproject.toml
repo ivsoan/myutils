@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "myutils"
-version = "1.1.1"
+version = "1.1.2"
 description = "My custom utility package"
 authors = [
   { name="Chen Junpeng", email="cjp_2002@163.com" },

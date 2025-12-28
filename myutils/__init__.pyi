@@ -61,11 +61,11 @@ from .plots import (
     draw_multi_kde_plot as draw_multi_kde_plot
 )
 
-from .run_in_processes import (
+from .processes import (
     run_in_processes as run_in_processes
 )
 
-from .timeout import (
+from .time_out import (
     timeout as timeout
 )
 

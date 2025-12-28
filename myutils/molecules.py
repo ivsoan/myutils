@@ -71,7 +71,7 @@ def clean_smiles_list(smiles_list: List[str], sanitize: bool = True, num_process
     :param logger: the logger to use.
     :return:
     """
-    from .run_in_processes import run_in_processes
+    from .processes import run_in_processes
 
     parallel_decorator = run_in_processes(num_processes, remove_error_results=remove_error_results)
     parallel_normalize_smiles = parallel_decorator(normalize_smiles)
@@ -583,7 +583,7 @@ def draw_chemical_space_plot(smiles_groups: List[Union[str, List[str]]],
     :param logger: the logger to use.
     :return:
     """
-    from .run_in_processes import run_in_processes
+    from .processes import run_in_processes
     import matplotlib.pyplot as plt
     from sklearn.manifold import TSNE
     from .utils_waring import UtilsWarning
