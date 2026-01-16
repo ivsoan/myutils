@@ -15,11 +15,10 @@ from .utils_waring import UtilsWarning
 from .util import get_datetime_str
 
 
-def log_execution(level=logging.INFO, message="Calling function {func_name} with args: {args} kwargs: {kwargs}"):
+def log_call(level=logging.INFO):
     """
     Decorator to log function execution.
     :param level: the logging level to use (default is logging.INFO)
-    :param message: the message to log (default is "Calling function {func_name} with args: {args} kwargs: {kwargs}")
     :return:
     """
     def decorator(func):
@@ -41,8 +40,29 @@ def log_execution(level=logging.INFO, message="Calling function {func_name} with
                 warnings.warn(UtilsWarning("No logger found in arguments, using root logger."))
                 logger = logging.getLogger()
 
-            formatted_message = message.format(func_name=func.__name__, args=args, kwargs=kwargs)
-            logger.log(level, formatted_message)
+            try:
+                sig = inspect.signature(func)
+                bound_args = sig.bind(*args, **kwargs)
+                bound_args.apply_defaults()
+
+                param_strs = []
+                for k, v in bound_args.arguments.items():
+                    if k == 'self':
+                        continue
+
+                    v_str = str(v)
+                    param_strs.append(f"{k}: {v_str}")
+
+                if param_strs:
+                    args_content = ", \n".join(param_strs)
+                    all_args_str = f"Running function: {func.__name__} with:\n{args_content}"
+                else:
+                    all_args_str = f"Running function: {func.__name__} (No arguments)"
+
+            except Exception:
+                all_args_str = f"Running function: {func.__name__} with args: {args}, kwargs: {kwargs}"
+
+            logger.log(level, all_args_str)
 
             result = func(*args, **kwargs)
             return result

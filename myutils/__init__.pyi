@@ -14,7 +14,8 @@ from .file_process import (
 )
 
 from .logger import (
-    log_execution as log_execution,
+    log_call as log_call,
+    log_call as log_execution,
     logging_init as logging_init
 )
 
@@ -81,7 +82,7 @@ __all__ = [
     "load_pkl_file", "save_dict_to_npz_file", "load_npz_file",
 
     # logger
-    "log_execution", "logging_init",
+    "log_call", "logging_init", "log_execution",
 
     # model
     "FeedForwardNeuralNetwork", "MyDataset", "EarlyStop", "RMSELoss",
